@@ -144,3 +144,36 @@ export function compileClaudeCode(data: PersonaData): string {
 
   return lines.join("\n").trim();
 }
+
+export const BASELINE_SECTION = `<!-- PERSONAXIS:BASELINE:BEGIN -->
+## Behavioral Baseline
+
+This project has a shared behavioral baseline defined in @PERSONA.md.
+Read it before acting. The character, values, and limits defined there
+apply to every agent working in this project, regardless of role.
+<!-- PERSONAXIS:BASELINE:END -->`;
+
+export function injectBaselineIntoClaude(existingContent: string): string {
+  const begin = "<!-- PERSONAXIS:BASELINE:BEGIN -->";
+  const end = "<!-- PERSONAXIS:BASELINE:END -->";
+
+  if (existingContent.includes(begin)) {
+    const startIdx = existingContent.indexOf(begin);
+    const endIdx = existingContent.indexOf(end) + end.length;
+    return existingContent.slice(0, startIdx).trimEnd() + "\n\n" + BASELINE_SECTION + existingContent.slice(endIdx);
+  }
+
+  const separator = existingContent.trim().length > 0 ? "\n\n" : "";
+  return existingContent.trimEnd() + separator + BASELINE_SECTION + "\n";
+}
+
+export function compileClaudeCodeAgent(data: PersonaData, agentName: string): string {
+  const identity = data.identity as Record<string, string> | undefined;
+  const name = identity?.name ?? agentName;
+  const role = identity?.role ?? "";
+
+  const body = compileClaudeCode(data);
+  const description = role ? `${name} — ${role}` : name;
+
+  return `---\nname: ${name}\ndescription: ${description}\n---\n\n${body}\n`;
+}

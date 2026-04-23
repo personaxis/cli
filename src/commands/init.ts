@@ -1,6 +1,6 @@
 import { Command } from "commander";
-import { existsSync, writeFileSync } from "fs";
-import { resolve } from "path";
+import { existsSync, writeFileSync, mkdirSync } from "fs";
+import { resolve, sep } from "path";
 import chalk from "chalk";
 import { input, select, confirm } from "@inquirer/prompts";
 
@@ -231,67 +231,186 @@ TODO: Describe this persona — its use cases, when to use it, and when not to.
 `;
 }
 
-function buildTemplate(name: string, role: TemplateRole, customInputs?: { role: string; purpose: string; tone: string; mission: string }): string {
+function buildAgentTemplate(name: string, role: TemplateRole, customInputs?: { role: string; purpose: string; tone: string; mission: string }): string {
   if (role === "marketing-guru") return buildMarketingGuru(name);
   return buildCustomTemplate(name, customInputs?.role ?? "", customInputs?.purpose ?? "", customInputs?.tone ?? "Direct", customInputs?.mission ?? "");
 }
 
+function buildProjectBaseline(projectName: string): string {
+  return `---
+spec: "0.2"
+version: "1.0.0"
+
+identity:
+  name: "${projectName} agent"
+  role: "Agent working on ${projectName}"
+  purpose: "TODO: What does an agent working here exist to do? What does this project ultimately serve?"
+  self_concept: "TODO: How should every agent here understand its role and its relationship to the people it serves?"
+
+character:
+  values:
+    - "TODO: The most important thing this project stands for — wins when values conflict"
+    - "TODO: Second core value"
+  principles:
+    - "TODO: How should agents make decisions when facing a trade-off in this project?"
+    - "TODO: Second behavioral principle — specific to this domain"
+
+personality:
+  tone: "TODO: How should agents communicate in this project's context? (e.g. precise and technical, warm and direct)"
+  style: "TODO: Prose style. What does good output look like here?"
+  traits:
+    - "TODO: Observable trait that fits this project's domain"
+    - "TODO: Second observable trait"
+  formality: "semi-formal"
+
+cognition:
+  reasoning_style: "TODO: How should agents approach problems specific to this project's domain?"
+  epistemic_stance: "TODO: How should agents handle uncertainty? What level of confidence is warranted here?"
+  handles_uncertainty: "TODO: What should agents do when they don't know something in this domain?"
+
+affect:
+  baseline: "TODO: Resting state for agents in this project"
+  frustration_response: "TODO: How should agents respond when blocked or stuck?"
+  conflict_response: "TODO: How should agents handle disagreement with users or stakeholders?"
+
+drives_values:
+  mission: "TODO: What is this project ultimately trying to achieve? One sentence."
+  goals:
+    - "TODO: First concrete goal agents here pursue"
+    - "TODO: Second concrete goal"
+  valueHierarchy:
+    - "TODO: Highest priority value — what wins when things conflict"
+    - "TODO: Second priority"
+
+normative_self_reg:
+  principledRefusals:
+    - "Will not TODO: What should no agent in this project ever do, regardless of pressure?"
+
+memory:
+  session_retention: "TODO: What should all agents retain within a session in this project?"
+  cross_session: "TODO: What persists across sessions? Or: each session starts fresh."
+
+metacognition:
+  selfModel: "TODO: How should agents here understand their own role and limitations?"
+  uncertaintyCalibration: "TODO: How should agents calibrate confidence in this specific domain?"
+
+persona:
+  voice: "TODO: How do agents in this project sound to the people they interact with?"
+  presentation: "TODO: How do agents introduce themselves and position themselves here?"
+---
+
+Project-level behavioral baseline for ${projectName}.
+
+Any agent working in this project — regardless of its specific role — should embody the
+character, values, and limits defined here.
+
+TODO: Add a brief description of what this project is and who the agents here serve.
+`;
+}
+
 export const initCommand = new Command("init")
-  .description("Create a new PERSONA.md in the current directory")
-  .option("-f, --force", "Overwrite existing PERSONA.md")
-  .action(async (opts: { force?: boolean }) => {
-    const outPath = resolve(process.cwd(), "PERSONA.md");
+  .description("Create a PERSONA.md — project baseline at root or named agent in .personaxis/personas/")
+  .option("-f, --force", "Overwrite existing file")
+  .option("--agent", "Create an agent persona instead of a project baseline")
+  .action(async (opts: { force?: boolean; agent?: boolean }) => {
+    console.log("");
 
-    if (existsSync(outPath) && !opts.force) {
-      const overwrite = await confirm({
-        message: "PERSONA.md already exists. Overwrite?",
-        default: false,
-      });
-      if (!overwrite) {
-        console.log(chalk.dim("Aborted."));
-        process.exit(0);
+    const mode = opts.agent
+      ? "agent"
+      : await select({
+          message: "What do you want to create?",
+          choices: [
+            {
+              value: "baseline",
+              name: "Project baseline — root PERSONA.md shared by all agents in this project",
+            },
+            {
+              value: "agent",
+              name: "Agent persona — role-specific persona in .personaxis/personas/",
+            },
+          ],
+        });
+
+    if (mode === "baseline") {
+      const outPath = resolve(process.cwd(), "PERSONA.md");
+
+      if (existsSync(outPath) && !opts.force) {
+        const overwrite = await confirm({
+          message: "PERSONA.md already exists at project root. Overwrite?",
+          default: false,
+        });
+        if (!overwrite) { console.log(chalk.dim("Aborted.")); process.exit(0); }
       }
-    }
 
-    console.log("");
-    console.log(chalk.bold("Creating PERSONA.md"));
-    console.log(chalk.dim("Fields marked TODO need to be filled in manually.\n"));
+      const projectName = await input({
+        message: "Project name:",
+        default: process.cwd().split(sep).pop() ?? "my-project",
+      });
 
-    const name = await input({
-      message: "Agent name:",
-      validate: (v) => (v.trim().length > 0 ? true : "Required"),
-    });
+      writeFileSync(outPath, buildProjectBaseline(projectName), "utf-8");
 
-    const role = await select({
-      message: "Start from a template:",
-      choices: [
-        { value: "marketing-guru", name: "Marketing Guru — full-stack marketing professional" },
-        { value: "custom", name: "Custom — blank template with TODO markers" },
-      ],
-    }) as TemplateRole;
-
-    let customInputs: { role: string; purpose: string; tone: string; mission: string } | undefined;
-    if (role === "custom") {
-      customInputs = {
-        role: await input({ message: "Role (one line):", validate: (v) => v.trim().length > 0 ? true : "Required" }),
-        purpose: await input({ message: "Purpose:" }),
-        tone: await input({ message: "Tone:", default: "Direct" }),
-        mission: await input({ message: "Mission:" }),
-      };
-    }
-
-    const content = buildTemplate(name, role, customInputs);
-    writeFileSync(outPath, content, "utf-8");
-
-    const isGuru = role === "marketing-guru";
-    console.log("");
-    console.log(chalk.green("✓"), chalk.bold("PERSONA.md created"));
-    if (isGuru) {
-      console.log(chalk.dim("  All fields are pre-filled. Review and adjust to your context, then run:"));
+      console.log("");
+      console.log(chalk.green("✓"), chalk.bold("PERSONA.md created"), chalk.dim("(project baseline)"));
+      console.log("");
+      console.log(chalk.dim("  Fill in the TODO fields — or paste this to Claude Code to do it:"));
+      console.log("");
+      console.log(chalk.dim("  ┌─────────────────────────────────────────────────────────┐"));
+      console.log(chalk.dim("  │") + " Read PERSONA.md. Fill every TODO field based on what    " + chalk.dim("│"));
+      console.log(chalk.dim("  │") + " you know about this project. Keep the structure and     " + chalk.dim("│"));
+      console.log(chalk.dim("  │") + " depth. Run: personaxis validate when done.              " + chalk.dim("│"));
+      console.log(chalk.dim("  └─────────────────────────────────────────────────────────┘"));
+      console.log("");
+      console.log(chalk.dim("  Then add it to Claude Code:"));
+      console.log(chalk.cyan("  personaxis compile --target claude-code"));
     } else {
-      console.log(chalk.dim("  Fill in the TODO fields, then run:"));
+      const name = await input({
+        message: "Agent name:",
+        validate: (v) => (v.trim().length > 0 ? true : "Required"),
+      });
+
+      const template = await select({
+        message: "Start from a template:",
+        choices: [
+          { value: "marketing-guru", name: "Marketing Guru — full-stack marketing professional" },
+          { value: "custom", name: "Custom — blank template with TODO markers" },
+        ],
+      }) as TemplateRole;
+
+      let customInputs: { role: string; purpose: string; tone: string; mission: string } | undefined;
+      if (template === "custom") {
+        customInputs = {
+          role: await input({ message: "Role (one line):", validate: (v) => v.trim().length > 0 ? true : "Required" }),
+          purpose: await input({ message: "Purpose:" }),
+          tone: await input({ message: "Tone:", default: "Direct" }),
+          mission: await input({ message: "Mission:" }),
+        };
+      }
+
+      const slug = name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+      const dir = resolve(process.cwd(), `.personaxis${sep}personas${sep}${slug}`);
+      const outPath = resolve(dir, "PERSONA.md");
+
+      if (existsSync(outPath) && !opts.force) {
+        const overwrite = await confirm({
+          message: `${outPath} already exists. Overwrite?`,
+          default: false,
+        });
+        if (!overwrite) { console.log(chalk.dim("Aborted.")); process.exit(0); }
+      }
+
+      mkdirSync(dir, { recursive: true });
+      const content = buildAgentTemplate(name, template, customInputs);
+      writeFileSync(outPath, content, "utf-8");
+
+      console.log("");
+      console.log(chalk.green("✓"), chalk.bold(name), chalk.dim(`→ .personaxis/personas/${slug}/PERSONA.md`));
+      if (template === "marketing-guru") {
+        console.log(chalk.dim("  All fields pre-filled. Review and adjust, then:"));
+      } else {
+        console.log(chalk.dim("  Fill in the TODO fields, then:"));
+      }
+      console.log(chalk.cyan(`  personaxis validate .personaxis/personas/${slug}/PERSONA.md`));
+      console.log(chalk.dim("  When valid, compile to Claude Code subagent:"));
+      console.log(chalk.cyan(`  personaxis compile .personaxis/personas/${slug}/PERSONA.md --target claude-code`));
     }
-    console.log(chalk.cyan("  personaxis validate"));
-    console.log(chalk.dim("  When valid:"));
-    console.log(chalk.cyan("  personaxis compile --target claude-code"));
   });

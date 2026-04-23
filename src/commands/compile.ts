@@ -1,35 +1,75 @@
 import { Command } from "commander";
-import { writeFileSync, mkdirSync } from "fs";
-import { resolve, dirname } from "path";
+import { writeFileSync, readFileSync, mkdirSync, existsSync } from "fs";
+import { resolve, dirname, basename, sep } from "path";
 import chalk from "chalk";
 import { loadPersonaFile } from "../load.js";
 import { validatePersona } from "../schema.js";
-import { compileClaudeCode } from "../targets/claude-code.js";
+import { compileClaudeCode, compileClaudeCodeAgent, injectBaselineIntoClaude } from "../targets/claude-code.js";
 import { compileSoulMd } from "../targets/soul-md.js";
 import { compileCursor } from "../targets/cursor.js";
 
-const TARGETS = {
-  "claude-code": { fn: compileClaudeCode, outFile: "CLAUDE.md", label: "Claude Code system prompt" },
-  "soul-md": { fn: compileSoulMd, outFile: "SOUL.md", label: "OpenClaw SOUL.md" },
-  cursor: { fn: compileCursor, outFile: ".cursor/rules/persona.md", label: "Cursor rules" },
-};
+const TARGETS = ["claude-code", "soul-md", "cursor"] as const;
+type Target = (typeof TARGETS)[number];
 
-type Target = keyof typeof TARGETS;
+function isAgentPersona(filePath: string): boolean {
+  const normalized = filePath.replace(/\\/g, "/");
+  return normalized.includes(".personaxis/personas/");
+}
+
+function agentSlugFromPath(filePath: string): string {
+  const normalized = filePath.replace(/\\/g, "/");
+  const match = normalized.match(/\.personaxis\/personas\/([^/]+)\//);
+  return match?.[1] ?? basename(dirname(filePath));
+}
+
+function handleClaudeCode(
+  loaded: ReturnType<typeof loadPersonaFile>,
+  opts: { out?: string; stdout?: boolean }
+): void {
+  const isAgent = isAgentPersona(loaded.path);
+
+  if (isAgent) {
+    const agentSlug = agentSlugFromPath(loaded.path);
+    const output = compileClaudeCodeAgent(loaded.data, agentSlug);
+
+    if (opts.stdout) { process.stdout.write(output + "\n"); return; }
+
+    const dest = resolve(opts.out ?? `.claude${sep}agents${sep}${agentSlug}.md`);
+    mkdirSync(dirname(dest), { recursive: true });
+    writeFileSync(dest, output, "utf-8");
+
+    const name = (loaded.data.identity as Record<string, string> | undefined)?.name ?? agentSlug;
+    console.log(chalk.green("✓"), chalk.bold(name), chalk.dim("→"), `.claude/agents/${agentSlug}.md`);
+    console.log(chalk.dim("  Claude Code subagent. Invoke with /agents or slash commands."));
+  } else {
+    const section = injectBaselineIntoClaude(
+      existsSync("CLAUDE.md") ? readFileSync("CLAUDE.md", "utf-8") : ""
+    );
+
+    if (opts.stdout) { process.stdout.write(section + "\n"); return; }
+
+    const dest = resolve(opts.out ?? "CLAUDE.md");
+    writeFileSync(dest, section, "utf-8");
+
+    console.log(chalk.green("✓"), chalk.bold("Behavioral baseline"), chalk.dim("→"), dest);
+    console.log(chalk.dim("  CLAUDE.md references @PERSONA.md. Claude Code will apply it automatically."));
+  }
+}
 
 export const compileCommand = new Command("compile")
   .description("Compile a PERSONA.md to a target format")
   .argument("[file]", "Path to PERSONA.md (defaults to ./PERSONA.md)")
   .requiredOption(
     "-t, --target <target>",
-    `Compile target: ${Object.keys(TARGETS).join(" | ")}`
+    `Compile target: ${TARGETS.join(" | ")}`
   )
   .option("-o, --out <path>", "Output file path (overrides default)")
   .option("--stdout", "Print to stdout instead of writing a file")
   .action((file: string | undefined, opts: { target: string; out?: string; stdout?: boolean }) => {
     const target = opts.target as Target;
-    if (!TARGETS[target]) {
+    if (!TARGETS.includes(target)) {
       console.error(chalk.red("Unknown target:"), target);
-      console.error(chalk.dim("Valid targets:"), Object.keys(TARGETS).join(", "));
+      console.error(chalk.dim("Valid targets:"), TARGETS.join(", "));
       process.exit(1);
     }
 
@@ -47,20 +87,23 @@ export const compileCommand = new Command("compile")
       process.exit(1);
     }
 
-    const { fn, outFile, label } = TARGETS[target];
-    const output = fn(loaded.data);
-
-    if (opts.stdout) {
-      process.stdout.write(output + "\n");
+    if (target === "claude-code") {
+      handleClaudeCode(loaded, opts);
       return;
     }
 
+    const standaloneTargets = {
+      "soul-md": { fn: compileSoulMd, outFile: "SOUL.md", label: "OpenClaw SOUL.md" },
+      cursor: { fn: compileCursor, outFile: `.cursor${sep}rules${sep}persona.md`, label: "Cursor rules" },
+    } as const;
+
+    const { fn, outFile, label } = standaloneTargets[target as "soul-md" | "cursor"];
+    const output = fn(loaded.data);
+
+    if (opts.stdout) { process.stdout.write(output + "\n"); return; }
+
     const dest = resolve(opts.out ?? outFile);
-
-    try {
-      mkdirSync(dirname(dest), { recursive: true });
-    } catch {}
-
+    mkdirSync(dirname(dest), { recursive: true });
     writeFileSync(dest, output, "utf-8");
 
     const name = (loaded.data.identity as Record<string, string> | undefined)?.name ?? "persona";
