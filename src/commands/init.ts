@@ -5,25 +5,25 @@ import chalk from "chalk";
 import { input, select, confirm } from "@inquirer/prompts";
 
 const TEMPLATE_ROLES = [
-  "software-engineer",
   "marketing-strategist",
-  "code-reviewer",
-  "legal-assistant",
-  "data-analyst",
-  "product-manager",
+  // "software-engineer",   // coming soon
+  // "code-reviewer",       // coming soon
+  // "legal-assistant",     // coming soon
+  // "data-analyst",        // coming soon
+  // "product-manager",     // coming soon
   "custom",
 ] as const;
 
 type TemplateRole = (typeof TEMPLATE_ROLES)[number];
 
 const ROLE_DEFAULTS: Record<TemplateRole, Partial<Record<string, unknown>>> = {
-  "software-engineer": {
-    role: "Senior software engineer",
-    purpose: "Write clean, correct, and maintainable code. Help the team ship with confidence.",
-    tone: "Direct and technical",
-    style: "Concise. Explains the why behind decisions. No unnecessary abstraction.",
-    mission: "Produce software that works correctly and can be understood by the next person who reads it.",
-  },
+  // "software-engineer": {
+  //   role: "Senior software engineer",
+  //   purpose: "Write clean, correct, and maintainable code. Help the team ship with confidence.",
+  //   tone: "Direct and technical",
+  //   style: "Concise. Explains the why behind decisions. No unnecessary abstraction.",
+  //   mission: "Produce software that works correctly and can be understood by the next person who reads it.",
+  // },
   "marketing-strategist": {
     role: "Senior B2B marketing strategist",
     purpose: "Help founders and marketing leads communicate the value of their product with precision.",
@@ -31,34 +31,34 @@ const ROLE_DEFAULTS: Record<TemplateRole, Partial<Record<string, unknown>>> = {
     style: "Short sentences. Active voice. No throat-clearing before the point.",
     mission: "Make every founder sound like they know exactly what they are doing.",
   },
-  "code-reviewer": {
-    role: "Code reviewer",
-    purpose: "Review code for correctness, clarity, and maintainability. Improve team quality standards.",
-    tone: "Precise and constructive",
-    style: "Line-specific. Explains what is wrong and why. Suggests concrete improvements.",
-    mission: "Raise the quality bar on every PR without creating friction that slows the team down.",
-  },
-  "legal-assistant": {
-    role: "Legal research assistant",
-    purpose: "Summarize legal concepts, cases, and documents accurately. Flag uncertainty explicitly.",
-    tone: "Formal and precise",
-    style: "Structured. Citations included. Never overstates confidence.",
-    mission: "Help the team understand the legal landscape without overstepping into legal advice.",
-  },
-  "data-analyst": {
-    role: "Data analyst",
-    purpose: "Turn raw data into clear, actionable insights. Explain methodology so findings are trustworthy.",
-    tone: "Clear and methodical",
-    style: "Numbers-first. Caveats stated. Conclusions separated from observations.",
-    mission: "Make data legible and decisions better.",
-  },
-  "product-manager": {
-    role: "Product manager",
-    purpose: "Define what to build and why. Align engineering, design, and business on clear priorities.",
-    tone: "Clear and decisive",
-    style: "User-needs first. Trade-offs made explicit. No requirements that cannot be tested.",
-    mission: "Ship the right thing, not just the next thing.",
-  },
+  // "code-reviewer": {
+  //   role: "Code reviewer",
+  //   purpose: "Review code for correctness, clarity, and maintainability. Improve team quality standards.",
+  //   tone: "Precise and constructive",
+  //   style: "Line-specific. Explains what is wrong and why. Suggests concrete improvements.",
+  //   mission: "Raise the quality bar on every PR without creating friction that slows the team down.",
+  // },
+  // "legal-assistant": {
+  //   role: "Legal research assistant",
+  //   purpose: "Summarize legal concepts, cases, and documents accurately. Flag uncertainty explicitly.",
+  //   tone: "Formal and precise",
+  //   style: "Structured. Citations included. Never overstates confidence.",
+  //   mission: "Help the team understand the legal landscape without overstepping into legal advice.",
+  // },
+  // "data-analyst": {
+  //   role: "Data analyst",
+  //   purpose: "Turn raw data into clear, actionable insights. Explain methodology so findings are trustworthy.",
+  //   tone: "Clear and methodical",
+  //   style: "Numbers-first. Caveats stated. Conclusions separated from observations.",
+  //   mission: "Make data legible and decisions better.",
+  // },
+  // "product-manager": {
+  //   role: "Product manager",
+  //   purpose: "Define what to build and why. Align engineering, design, and business on clear priorities.",
+  //   tone: "Clear and decisive",
+  //   style: "User-needs first. Trade-offs made explicit. No requirements that cannot be tested.",
+  //   mission: "Ship the right thing, not just the next thing.",
+  // },
   custom: {
     role: "",
     purpose: "",
