@@ -6,62 +6,76 @@ export function compileCursor(data: PersonaData): string {
   const personality = data.personality as Record<string, unknown> | undefined;
   const nsr = (data.normative_self_reg ?? data.constraints) as Record<string, unknown> | undefined;
   const persona = data.persona as Record<string, unknown> | undefined;
+  const name = identity?.name ?? "agent";
+  const role = identity?.role ?? "";
 
-  const lines: string[] = [];
+  const description = role
+    ? `Behavioral baseline for ${name} — ${role}`
+    : `Behavioral baseline for ${name}`;
+
+  const body: string[] = [];
 
   if (identity) {
-    lines.push(`You are ${identity.name ?? "an AI agent"}.`);
-    if (identity.role) lines.push(`Your role: ${identity.role}`);
-    if (identity.purpose) lines.push(`Your purpose: ${identity.purpose}`);
-    lines.push("");
+    body.push(`You are ${name}.`);
+    if (identity.role) body.push(`Your role: ${identity.role}`);
+    if (identity.purpose) body.push(`Your purpose: ${identity.purpose}`);
+    if (identity.self_concept) body.push(`${identity.self_concept}`);
+    body.push("");
   }
 
   if (persona?.voice) {
-    lines.push(`Voice: ${persona.voice}`);
-    lines.push("");
+    body.push(`Voice: ${persona.voice}`);
+    body.push("");
   }
 
   if (character) {
     const values = character.values as string[] | undefined;
     if (values?.length) {
-      lines.push("Values you hold:");
-      values.forEach((v) => lines.push(`- ${v}`));
-      lines.push("");
+      body.push("Values you hold:");
+      values.forEach((v) => body.push(`- ${v}`));
+      body.push("");
     }
     const principles = character.principles as string[] | undefined;
     if (principles?.length) {
-      lines.push("How you behave:");
-      principles.forEach((p) => lines.push(`- ${p}`));
-      lines.push("");
+      body.push("How you behave:");
+      principles.forEach((p) => body.push(`- ${p}`));
+      body.push("");
     }
   }
 
   if (personality) {
     if (personality.tone || personality.style) {
-      lines.push("Communication style:");
-      if (personality.tone) lines.push(`- Tone: ${personality.tone}`);
-      if (personality.style) lines.push(`- Style: ${personality.style}`);
-      lines.push("");
+      body.push("Communication style:");
+      if (personality.tone) body.push(`- Tone: ${personality.tone}`);
+      if (personality.style) body.push(`- Style: ${personality.style}`);
+      body.push("");
+    }
+    const traits = personality.traits as string[] | undefined;
+    if (traits?.length) {
+      body.push("Traits:");
+      traits.forEach((t) => body.push(`- ${t}`));
+      body.push("");
     }
   }
 
   if (nsr) {
     const refusals = (nsr.principledRefusals ?? (nsr as Record<string, unknown>).hard_limits) as string[] | undefined;
     if (refusals?.length) {
-      lines.push("You will never:");
+      body.push("You will never:");
       refusals.forEach((r) => {
         const clean = r.replace(/^Will not /i, "").replace(/^Will never /i, "");
-        lines.push(`- ${clean}`);
+        body.push(`- ${clean}`);
       });
-      lines.push("");
+      body.push("");
     }
     const oos = nsr.out_of_scope as string[] | undefined;
     if (oos?.length) {
-      lines.push("Out of scope for you:");
-      oos.forEach((o) => lines.push(`- ${o}`));
-      lines.push("");
+      body.push("Out of scope:");
+      oos.forEach((o) => body.push(`- ${o}`));
+      body.push("");
     }
   }
 
-  return lines.join("\n").trim();
+  const frontmatter = `---\ndescription: ${description}\nalwaysApply: true\n---\n\n`;
+  return frontmatter + body.join("\n").trim();
 }

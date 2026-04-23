@@ -94,7 +94,7 @@ export const compileCommand = new Command("compile")
 
     const standaloneTargets = {
       "soul-md": { fn: compileSoulMd, outFile: "SOUL.md", label: "OpenClaw SOUL.md" },
-      cursor: { fn: compileCursor, outFile: `.cursor${sep}rules${sep}persona.md`, label: "Cursor rules" },
+      cursor: { fn: compileCursor, outFile: `.cursor${sep}rules${sep}persona.mdc`, label: "Cursor rules (.mdc)" },
     } as const;
 
     const { fn, outFile, label } = standaloneTargets[target as "soul-md" | "cursor"];

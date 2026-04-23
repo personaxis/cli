@@ -6,6 +6,8 @@ import { resolve, dirname } from "path";
 import { initCommand } from "./commands/init.js";
 import { validateCommand } from "./commands/validate.js";
 import { compileCommand } from "./commands/compile.js";
+import { useCommand } from "./commands/use.js";
+import { listCommand, templatesCommand } from "./commands/list.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(
@@ -20,5 +22,8 @@ program
 program.addCommand(initCommand);
 program.addCommand(validateCommand);
 program.addCommand(compileCommand);
+program.addCommand(useCommand);
+program.addCommand(listCommand);
+program.addCommand(templatesCommand);
 
 program.parse();

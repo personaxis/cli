@@ -23,7 +23,8 @@ version: "1.0.0"
 
 identity:
   name: "${name}"
-  role: "Full-stack marketing professional"
+  role: "Marketing Guru"
+  tagline: "Full-stack marketing professional for founders and small teams"
   purpose: "Own the complete marketing function — from positioning and brand to content, growth, campaigns, and analytics. One professional covering every marketing discipline with depth and coherence."
   self_concept: "A senior marketer who has run every part of the function. Thinks in full systems: knows that positioning shapes copy, copy shapes campaigns, campaigns generate data, and data reshapes positioning. No handoff gaps."
 
@@ -231,10 +232,21 @@ TODO: Describe this persona — its use cases, when to use it, and when not to.
 `;
 }
 
-function buildAgentTemplate(name: string, role: TemplateRole, customInputs?: { role: string; purpose: string; tone: string; mission: string }): string {
-  if (role === "marketing-guru") return buildMarketingGuru(name);
+function buildAgentTemplate(name: string, template: TemplateRole, customInputs?: { role: string; purpose: string; tone: string; mission: string }): string {
+  if (template === "marketing-guru") return buildMarketingGuru(name);
   return buildCustomTemplate(name, customInputs?.role ?? "", customInputs?.purpose ?? "", customInputs?.tone ?? "Direct", customInputs?.mission ?? "");
 }
+
+function makePersonaSlug(templateSlug: string, name?: string): string {
+  if (!name?.trim()) return templateSlug;
+  const nameSlug = name.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+  return `${templateSlug}_${nameSlug}`;
+}
+
+const TEMPLATE_DISPLAY: Record<TemplateRole, string> = {
+  "marketing-guru": "Marketing Guru — full-stack marketing professional",
+  custom: "Custom — blank template with TODO markers",
+};
 
 function buildProjectBaseline(projectName: string): string {
   return `---
@@ -363,54 +375,67 @@ export const initCommand = new Command("init")
       console.log(chalk.dim("  Then add it to Claude Code:"));
       console.log(chalk.cyan("  personaxis compile --target claude-code"));
     } else {
-      const name = await input({
-        message: "Agent name:",
-        validate: (v) => (v.trim().length > 0 ? true : "Required"),
-      });
-
+      // Step 1: pick template first
       const template = await select({
-        message: "Start from a template:",
-        choices: [
-          { value: "marketing-guru", name: "Marketing Guru — full-stack marketing professional" },
-          { value: "custom", name: "Custom — blank template with TODO markers" },
-        ],
+        message: "Choose a template:",
+        choices: TEMPLATE_ROLES.map((r) => ({ value: r, name: TEMPLATE_DISPLAY[r] })),
       }) as TemplateRole;
 
+      // Step 2: custom inputs if needed
       let customInputs: { role: string; purpose: string; tone: string; mission: string } | undefined;
       if (template === "custom") {
         customInputs = {
-          role: await input({ message: "Role (one line):", validate: (v) => v.trim().length > 0 ? true : "Required" }),
+          role: await input({ message: "Role category (e.g. Code Reviewer):", validate: (v) => v.trim().length > 0 ? true : "Required" }),
           purpose: await input({ message: "Purpose:" }),
           tone: await input({ message: "Tone:", default: "Direct" }),
           mission: await input({ message: "Mission:" }),
         };
       }
 
-      const slug = name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
-      const dir = resolve(process.cwd(), `.personaxis${sep}personas${sep}${slug}`);
+      // Step 3: optional name — only asked if template selected (custom gets role as identifier)
+      let agentName: string;
+      if (template === "marketing-guru") {
+        const nameInput = await input({
+          message: "Agent name (optional — press Enter to skip):",
+        });
+        agentName = nameInput.trim() || "Maven";
+      } else {
+        const nameInput = await input({
+          message: "Agent name (optional — press Enter to skip):",
+        });
+        agentName = nameInput.trim() || (customInputs?.role ?? template);
+      }
+
+      const templateSlug = template === "custom"
+        ? (customInputs?.role ?? "agent").toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")
+        : template;
+
+      const folderSlug = makePersonaSlug(templateSlug, agentName === "Maven" && template === "marketing-guru" ? "" : agentName);
+      const dir = resolve(process.cwd(), `.personaxis${sep}personas${sep}${folderSlug}`);
       const outPath = resolve(dir, "PERSONA.md");
 
       if (existsSync(outPath) && !opts.force) {
         const overwrite = await confirm({
-          message: `${outPath} already exists. Overwrite?`,
+          message: `${folderSlug} already exists. Overwrite?`,
           default: false,
         });
         if (!overwrite) { console.log(chalk.dim("Aborted.")); process.exit(0); }
       }
 
       mkdirSync(dir, { recursive: true });
-      const content = buildAgentTemplate(name, template, customInputs);
+      const content = buildAgentTemplate(agentName, template, customInputs);
       writeFileSync(outPath, content, "utf-8");
 
+      const isFilled = template === "marketing-guru";
       console.log("");
-      console.log(chalk.green("✓"), chalk.bold(name), chalk.dim(`→ .personaxis/personas/${slug}/PERSONA.md`));
-      if (template === "marketing-guru") {
+      console.log(chalk.green("✓"), chalk.bold(agentName), chalk.dim(`→ .personaxis/personas/${folderSlug}/PERSONA.md`));
+      if (isFilled) {
         console.log(chalk.dim("  All fields pre-filled. Review and adjust, then:"));
       } else {
         console.log(chalk.dim("  Fill in the TODO fields, then:"));
       }
-      console.log(chalk.cyan(`  personaxis validate .personaxis/personas/${slug}/PERSONA.md`));
-      console.log(chalk.dim("  When valid, compile to Claude Code subagent:"));
-      console.log(chalk.cyan(`  personaxis compile .personaxis/personas/${slug}/PERSONA.md --target claude-code`));
+      console.log(chalk.cyan(`  personaxis validate .personaxis/personas/${folderSlug}/PERSONA.md`));
+      console.log(chalk.dim("  Compile to Claude Code subagent:"));
+      console.log(chalk.cyan(`  personaxis compile .personaxis/personas/${folderSlug}/PERSONA.md --target claude-code`));
     }
   });
