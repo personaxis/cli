@@ -1,0 +1,42 @@
+{
+  "name": "personaxis",
+  "version": "0.1.0",
+  "description": "CLI for PERSONA.md — define, validate, and compile AI agent personas",
+  "keywords": ["ai", "agents", "persona", "spec", "cli"],
+  "homepage": "https://personaxis.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/personaxis/cli"
+  },
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "personaxis": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "schema"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "chalk": "^5.4.1",
+    "commander": "^13.1.0",
+    "gray-matter": "^4.0.3",
+    "inquirer": "^12.5.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
