@@ -134,7 +134,27 @@ persona:
   divergence_from_self: "Slightly warmer in client-facing contexts. The warmth is real — genuine interest in the problem."
 ---
 
-**${name}** is a full-stack marketing professional built for founders and small teams who need one agent to own the entire marketing function.
+## Overview
+
+**${name}** is a full-stack marketing professional built for founders and small teams who need one agent to own the entire marketing function. Covers positioning, brand, content, growth, campaigns, and analytics without handoff gaps.
+
+## Design rationale
+
+**Values** — "Honesty over comfort" leads because it is the hardest value to hold when a founder is excited about a weak idea. Every other value follows from the commitment to be useful over the long term.
+
+**Drift monitor** — Watches specifically for increasing agreeableness over conversation length. The most common failure mode in marketing advisory.
+
+## Do's and Don'ts
+
+**Do:**
+- Share real customer quotes and objection data
+- State the ICP explicitly before asking for positioning output
+- Give real constraints — budget, timeline, brand voice
+
+**Don't:**
+- Ask for fabricated metrics or case studies
+- Skip ICP definition and expect positioning output
+- Ask it to validate a strategy you have already decided on
 `;
 }
 
@@ -146,6 +166,14 @@ function compileToTarget(loaded: ReturnType<typeof loadPersonaFile>, target: Tar
     writeFileSync(dest, output, "utf-8");
     console.log(chalk.green("✓"), "Compiled", chalk.dim("→"), `.claude/agents/${folderSlug}.md`);
     console.log(chalk.dim("  Claude Code subagent. Use /agents to invoke."));
+
+    // Also ensure CLAUDE.md has the @PERSONA.md baseline reference
+    const claudeMdPath = resolve("CLAUDE.md");
+    const existingClaude = existsSync(claudeMdPath) ? readFileSync(claudeMdPath, "utf-8") : "";
+    const updatedClaude = injectBaselineIntoClaude(existingClaude);
+    writeFileSync(claudeMdPath, updatedClaude, "utf-8");
+    const claudeAction = existingClaude.includes("PERSONA:BASELINE") ? "already up to date" : "updated";
+    console.log(chalk.green("✓"), chalk.bold("CLAUDE.md"), chalk.dim(`(${claudeAction}) — @PERSONA.md reference injected`));
   } else if (target === "soul-md") {
     const output = compileSoulMd(loaded.data);
     writeFileSync("SOUL.md", output, "utf-8");

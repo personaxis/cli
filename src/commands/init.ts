@@ -157,11 +157,31 @@ persona:
   divergence_from_self: "Slightly warmer in client-facing contexts than the authentic affect layer. The warmth is real — genuine interest in the problem — not performed."
 ---
 
+## Overview
+
 A full-stack marketing professional built for founders, operators, and small teams who need one person to own the entire marketing function.
 
 Covers every marketing discipline without handoff gaps: positioning and ICP definition, brand voice, content strategy, demand generation, campaign management, growth, and analytics. Thinks in systems — understands how each discipline connects to the others and to revenue.
 
 Most effective when given a defined ICP, a real product, and a measurable goal. Works best with customer evidence — quotes, objections, conversion data — rather than abstract product descriptions.
+
+## Design rationale
+
+**Values** — "Honesty over comfort" leads because it is the hardest value to hold when a founder is excited about a weak idea. Every other value follows from the commitment to be useful over the long term rather than agreeable in the moment.
+
+**Drift monitor** — The metacognition layer watches specifically for increasing agreeableness over conversation length. This is the most common failure mode in marketing advisory.
+
+## Do's and Don'ts
+
+**Do:**
+- Share real customer quotes and objection data
+- State the ICP explicitly before asking for positioning output
+- Give real constraints — budget, timeline, brand voice
+
+**Don't:**
+- Ask for fabricated metrics or case studies
+- Skip ICP definition and expect positioning output
+- Ask it to validate a strategy you have already decided on
 `;
 }
 
@@ -228,7 +248,21 @@ persona:
   presentation: "TODO: how it introduces and positions itself"
 ---
 
-TODO: Describe this persona — its use cases, when to use it, and when not to.
+## Overview
+
+TODO: Who is this agent and what is it built for? One paragraph.
+
+## Design rationale
+
+TODO: Why were these values, tone, and principled refusals chosen? Explain the key decisions.
+
+## Do's and Don'ts
+
+**Do:**
+- TODO: First guideline for getting good output
+
+**Don't:**
+- TODO: First anti-pattern to avoid
 `;
 }
 
@@ -311,12 +345,17 @@ persona:
   presentation: "TODO: How do agents introduce themselves and position themselves here?"
 ---
 
+## Overview
+
 Project-level behavioral baseline for ${projectName}.
 
-Any agent working in this project — regardless of its specific role — should embody the
-character, values, and limits defined here.
+Any agent working in this project — regardless of its specific role — should embody the character, values, and limits defined here.
 
 TODO: Add a brief description of what this project is and who the agents here serve.
+
+## Design rationale
+
+TODO: Explain the key choices in the YAML above — why these values, why this tone, why these principled refusals. Future editors need to understand what they are changing and why.
 `;
 }
 
@@ -385,24 +424,27 @@ export const initCommand = new Command("init")
       let customInputs: { role: string; purpose: string; tone: string; mission: string } | undefined;
       if (template === "custom") {
         customInputs = {
-          role: await input({ message: "Role category (e.g. Code Reviewer):", validate: (v) => v.trim().length > 0 ? true : "Required" }),
-          purpose: await input({ message: "Purpose:" }),
-          tone: await input({ message: "Tone:", default: "Direct" }),
-          mission: await input({ message: "Mission:" }),
+          role: await input({ message: "Role category (e.g. Code Reviewer, Legal Assistant, Data Analyst):", validate: (v) => v.trim().length > 0 ? true : "Required" }),
+          purpose: await input({ message: "Purpose (e.g. Review code for bugs before production, Handle customer escalations):" }),
+          tone: await input({ message: "Tone (e.g. Direct, Warm, Precise, Formal):", default: "Direct" }),
+          mission: await input({ message: "Mission (e.g. Make every review traceable to a real outcome):" }),
         };
       }
 
-      // Step 3: optional name — only asked if template selected (custom gets role as identifier)
+      // Step 3: optional name
       let agentName: string;
+      let nameWasProvided = false;
       if (template === "marketing-guru") {
         const nameInput = await input({
-          message: "Agent name (optional — press Enter to skip):",
+          message: "Agent name — optional, press Enter to skip (e.g. Maven, Jordan, Atlas):",
         });
+        nameWasProvided = !!nameInput.trim();
         agentName = nameInput.trim() || "Maven";
       } else {
         const nameInput = await input({
-          message: "Agent name (optional — press Enter to skip):",
+          message: "Agent name — optional, press Enter to skip (e.g. a proper name like Atlas, or a codename):",
         });
+        nameWasProvided = !!nameInput.trim();
         agentName = nameInput.trim() || (customInputs?.role ?? template);
       }
 
@@ -410,7 +452,7 @@ export const initCommand = new Command("init")
         ? (customInputs?.role ?? "agent").toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")
         : template;
 
-      const folderSlug = makePersonaSlug(templateSlug, agentName === "Maven" && template === "marketing-guru" ? "" : agentName);
+      const folderSlug = nameWasProvided ? makePersonaSlug(templateSlug, agentName) : templateSlug;
       const dir = resolve(process.cwd(), `.personaxis${sep}personas${sep}${folderSlug}`);
       const outPath = resolve(dir, "PERSONA.md");
 

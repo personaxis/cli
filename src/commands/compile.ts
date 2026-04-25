@@ -41,6 +41,14 @@ function handleClaudeCode(
     const name = (loaded.data.identity as Record<string, string> | undefined)?.name ?? agentSlug;
     console.log(chalk.green("✓"), chalk.bold(name), chalk.dim("→"), `.claude/agents/${agentSlug}.md`);
     console.log(chalk.dim("  Claude Code subagent. Invoke with /agents or slash commands."));
+
+    // Also ensure CLAUDE.md has the @PERSONA.md baseline reference
+    const claudeMdPath = resolve("CLAUDE.md");
+    const existingClaude = existsSync(claudeMdPath) ? readFileSync(claudeMdPath, "utf-8") : "";
+    const updatedClaude = injectBaselineIntoClaude(existingClaude);
+    writeFileSync(claudeMdPath, updatedClaude, "utf-8");
+    const claudeAction = existingClaude.includes("PERSONA:BASELINE") ? "already up to date" : "updated";
+    console.log(chalk.green("✓"), chalk.bold("CLAUDE.md"), chalk.dim(`(${claudeAction}) — @PERSONA.md reference injected`));
   } else {
     const section = injectBaselineIntoClaude(
       existsSync("CLAUDE.md") ? readFileSync("CLAUDE.md", "utf-8") : ""
