@@ -1,3 +1,10 @@
 node_modules/
 dist/
 *.js.map
+
+# Test artifacts from local CLI runs
+.claude/
+.cursor/
+.personaxis/
+CLAUDE.md
+PERSONA.md

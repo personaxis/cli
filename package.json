@@ -1,8 +1,14 @@
 {
-  "name": "personaxis",
-  "version": "0.1.0",
+  "name": "@personaxis/persona.md",
+  "version": "0.1.1",
   "description": "CLI for PERSONA.md — define, validate, and compile AI agent personas",
-  "keywords": ["ai", "agents", "persona", "spec", "cli"],
+  "keywords": [
+    "ai",
+    "agents",
+    "persona",
+    "spec",
+    "cli"
+  ],
   "homepage": "https://personaxis.com",
   "repository": {
     "type": "git",
@@ -11,6 +17,10 @@
   "license": "MIT",
   "type": "module",
   "main": "dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./linter": "./dist/linter/index.js"
+  },
   "bin": {
     "personaxis": "dist/index.js"
   },
