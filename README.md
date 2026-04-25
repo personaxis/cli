@@ -18,6 +18,8 @@ CLI for [PERSONA.md](https://github.com/personaxis/persona.md) — define, valid
   - [validate](#validate)
   - [compile](#compile)
   - [use](#use)
+  - [diff](#diff)
+  - [pull / push](#pull--push)
 - [Examples](#examples)
 - [How it fits together](#how-it-fits-together)
 - [Contributing](#contributing)
@@ -234,6 +236,51 @@ personaxis use marketing-guru --name Maya --target claude-code
 # → .personaxis/personas/marketing-guru_maya/PERSONA.md
 # → .claude/agents/marketing-guru_maya.md
 ```
+
+---
+
+### diff
+
+Compare two versions of a PERSONA.md and report field-level changes.
+
+```bash
+personaxis diff PERSONA.md PERSONA-v2.md
+```
+
+Reports added, removed, and modified fields across all ten layers. Useful for reviewing changes before publishing a new version or auditing what changed between persona iterations.
+
+**Example output:**
+
+```
+Diff: PERSONA.md → PERSONA-v2.md
+
+  modified  character.values[0]        "Honesty over comfort" → "Precision over comfort"
+  added     metacognition.driftMonitor  "When responses become more agreeable..."
+  removed   persona.adaptations.early_ideation
+```
+
+Exit code `1` if there are breaking changes (required field removed or type changed), `0` otherwise.
+
+---
+
+### pull / push
+
+> Registry commands — available when the Personaxis registry launches.
+
+```bash
+# Download a persona from the registry
+personaxis pull marketing-guru
+personaxis pull personaxis/marketing-guru@1.0.0
+
+# Publish your persona to the registry
+personaxis push
+```
+
+`pull` downloads a persona package into `.personaxis/personas/` and works exactly like `npm install` — by name, by `author/name`, or pinned to an exact version.
+
+`push` publishes the persona in the current directory to the registry. Each push creates an immutable version. Requires authentication (`personaxis login`).
+
+[Join the waitlist at personaxis.com](https://personaxis.com) to be notified when the registry launches.
 
 ---
 
