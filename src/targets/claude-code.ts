@@ -145,17 +145,17 @@ export function compileClaudeCode(data: PersonaData): string {
   return lines.join("\n").trim();
 }
 
-export const BASELINE_SECTION = `<!-- PERSONAXIS:BASELINE:BEGIN -->
+export const BASELINE_SECTION = `<!-- PERSONA:BASELINE:BEGIN -->
 ## Behavioral Baseline
 
 This project has a shared behavioral baseline defined in @PERSONA.md.
 Read it before acting. The character, values, and limits defined there
 apply to every agent working in this project, regardless of role.
-<!-- PERSONAXIS:BASELINE:END -->`;
+<!-- PERSONA:BASELINE:END -->`;
 
 export function injectBaselineIntoClaude(existingContent: string): string {
-  const begin = "<!-- PERSONAXIS:BASELINE:BEGIN -->";
-  const end = "<!-- PERSONAXIS:BASELINE:END -->";
+  const begin = "<!-- PERSONA:BASELINE:BEGIN -->";
+  const end = "<!-- PERSONA:BASELINE:END -->";
 
   if (existingContent.includes(begin)) {
     const startIdx = existingContent.indexOf(begin);

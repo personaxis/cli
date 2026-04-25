@@ -1,12 +1,18 @@
-import { createRequire } from "module";
+import { readFileSync } from "fs";
+import { fileURLToPath } from "url";
+import { resolve, dirname } from "path";
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
 
-const require = createRequire(import.meta.url);
-const rawSchema = require("../schema/persona.schema.json");
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const rawSchema = JSON.parse(
+  readFileSync(resolve(__dirname, "../schema/persona.schema.json"), "utf-8")
+) as {
+  properties: Record<string, Record<string, unknown>>;
+  [key: string]: unknown;
+};
 
 // Strip the const constraint on "spec" so the validator accepts any 0.x value.
-// The spec field is informational for humans; the CLI validates structure, not version lock.
 const schema = {
   ...rawSchema,
   properties: {
